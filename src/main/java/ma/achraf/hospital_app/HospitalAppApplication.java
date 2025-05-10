@@ -1,10 +1,7 @@
 package ma.achraf.hospital_app;
 
-import ma.achraf.hospital_app.entities.Patient;
-import ma.achraf.hospital_app.repository.ConsultationRepository;
-import ma.achraf.hospital_app.repository.MedecinRepository;
-import ma.achraf.hospital_app.repository.PatientRepository;
-import ma.achraf.hospital_app.repository.RendezVousRepository;
+import ma.achraf.hospital_app.entities.*;
+import ma.achraf.hospital_app.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -12,6 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @SpringBootApplication
 public class HospitalAppApplication implements CommandLineRunner {
@@ -26,6 +24,7 @@ public class HospitalAppApplication implements CommandLineRunner {
     private ConsultationRepository consultationRepository;
 
 
+
     public static void main(String[] args) {
         SpringApplication.run(HospitalAppApplication.class, args);
     }
@@ -33,8 +32,8 @@ public class HospitalAppApplication implements CommandLineRunner {
     @Override
     public void run(String... args) {
         // 🔹 Créer et sauvegarder des patients
-        patientRepository.save(new Patient(null, "Achraf", new Date(), true, 10));
-        patientRepository.save(new Patient(null, "Lina", new Date(), false, 20));
+        patientRepository.save(new Patient(null, "messi", new Date(), true, 10));
+        patientRepository.save(new Patient(null, "hafid", new Date(), false, 20));
         patientRepository.save(new Patient(null, "Karim", new Date(), true, 5));
 
         // 🔹 Consulter tous les patients
@@ -69,5 +68,25 @@ public class HospitalAppApplication implements CommandLineRunner {
             patientRepository.deleteById(idToDelete);
             System.out.println("\n🗑️ Patient supprimé avec ID : " + idToDelete);
         }
+        Medecin medecin = Medecin.builder()
+                .nom("Dr. Salma")
+                .specialite("Cardiologie")
+                .build();
+        medecin = medecinRepository.save(medecin);
+
+        RendezVous rdv = RendezVous.builder()
+                .date(new Date())
+                .status(STATUS.EN_ATTENTE)
+                .patient(patient)
+                .medecin(medecin)
+                .build();
+        rdv = rendezVousRepository.save(rdv);
+
+        Consultation consultation = Consultation.builder()
+                .dateConsultation(new Date())
+                .rapport("Consultation initiale : état stable.")
+                .rendezVous(rdv)
+                .build();
+        consultationRepository.save(consultation);
     }
 }
