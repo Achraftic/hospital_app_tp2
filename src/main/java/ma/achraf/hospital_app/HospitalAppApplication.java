@@ -1,7 +1,10 @@
 package ma.achraf.hospital_app;
 
 import ma.achraf.hospital_app.entities.Patient;
+import ma.achraf.hospital_app.repository.ConsultationRepository;
+import ma.achraf.hospital_app.repository.MedecinRepository;
 import ma.achraf.hospital_app.repository.PatientRepository;
+import ma.achraf.hospital_app.repository.RendezVousRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -15,6 +18,13 @@ public class HospitalAppApplication implements CommandLineRunner {
 
     @Autowired
     private PatientRepository patientRepository;
+    @Autowired
+    private MedecinRepository medecinRepository;
+    @Autowired
+    private RendezVousRepository rendezVousRepository;
+    @Autowired
+    private ConsultationRepository consultationRepository;
+
 
     public static void main(String[] args) {
         SpringApplication.run(HospitalAppApplication.class, args);
