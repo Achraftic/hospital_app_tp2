@@ -1,369 +1,258 @@
-Voici un guide complet pour accomplir les différentes étapes demandées :
+# 🏥 Rapport Technique — TP Gestion Hospitalière avec Spring Boot
 
-## 1. Créer un projet Spring Initializer avec les dépendances JPA, H2, Spring Web et Lombok
+## Introduction
 
-### Étapes :
+Dans le cadre de ce TP, nous avons conçu une application de gestion hospitalière en utilisant **Spring Boot**, **Spring Data JPA**, **Lombok**, et **MySQL**. L’objectif est de modéliser les différentes entités d’un hôpital, telles que les patients, les médecins, les rendez-vous et les consultations, et de les relier via des relations appropriées. Une gestion de rôles utilisateurs (`ADMIN`, `USER`) est également mise en place pour préparer une future couche de sécurité.
 
-1. Accédez à [Spring Initializr](https://start.spring.io/).
-2. Sélectionnez les options suivantes :
+---
 
-    * **Project** : Maven Project (ou Gradle Project, selon votre préférence)
-    * **Language** : Java
-    * **Spring Boot** : 2.x.x (choisissez la dernière version stable)
-    * **Dependencies** :
+## Modélisation des Entités
 
-        * **Spring Web**
-        * **Spring Data JPA**
-        * **H2 Database**
-        * **Lombok**
-3. Cliquez sur **Generate**, puis téléchargez et décompressez le projet généré.
-
-## 2. Créer l'entité JPA `Patient`
-
-Créez une classe `Patient` dans le répertoire `src/main/java/ma/achraf/hospital_app/entities/`.
-
-### Patient.java
+### 1. `Patient`
 
 ```java
-package ma.achraf.hospital_app.entities;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import javax.persistence.*;
-import java.util.Date;
-
-@Data
 @Entity
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Patient {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String nom;
-    
-    @Temporal(TemporalType.DATE)
     private Date dateNaissance;
-    
     private boolean malade;
-    
     private int score;
 }
 ```
 
-* **@Entity** indique que cette classe est une entité JPA.
-* **@Id** marque l'attribut `id` comme clé primaire.
-* **@GeneratedValue** spécifie la génération automatique de l'ID.
-* **@Temporal(TemporalType.DATE)** pour spécifier que `dateNaissance` est une date.
-
-## 3. Configurer l'unité de persistance dans le fichier `application.properties`
-
-Ouvrez le fichier `src/main/resources/application.properties` et ajoutez la configuration suivante pour l'unité de persistance avec H2 :
-
-### application.properties
-
-```properties
-# H2 Database Configuration
-spring.datasource.url=jdbc:h2:mem:testdb
-spring.datasource.driverClassName=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=password
-spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
-spring.jpa.hibernate.ddl-auto=update
-spring.h2.console.enabled=true
-```
-
-Si vous migrez vers MySQL, voici la configuration à ajouter :
-
-```properties
-# MySQL Database Configuration
-spring.datasource.url=jdbc:mysql://localhost:3306/hospital_db
-spring.datasource.username=root
-spring.datasource.password=root_password
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.database-platform=org.hibernate.dialect.MySQL8Dialect
-```
-
-Assurez-vous d'avoir installé MySQL et que la base de données `hospital_db` existe.
-
-## 4. Créer l'interface JPA Repository basée sur Spring Data
-
-Créez l'interface `PatientRepository` dans le répertoire `src/main/java/ma/achraf/hospital_app/repository/`.
-
-### PatientRepository.java
+### 2. `Medecin`
 
 ```java
-package ma.achraf.hospital_app.repository;
-
-import ma.achraf.hospital_app.entities.Patient;
-import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.List;
-
-public interface PatientRepository extends JpaRepository<Patient, Long> {
-    List<Patient> findByMalade(boolean malade);
-}
-```
-
-* **JpaRepository** offre des méthodes CRUD par défaut.
-* La méthode `findByMalade` permet de rechercher les patients en fonction de leur statut malade.
-
-## 5. Tester quelques opérations de gestion de patients
-
-Créez un fichier `CommandLineRunner` dans le répertoire `src/main/java/ma/achraf/hospital_app/` pour tester les opérations CRUD.
-
-### TestPatientOperations.java
-
-```java
-package ma.achraf.hospital_app;
-
-import ma.achraf.hospital_app.entities.Patient;
-import ma.achraf.hospital_app.repository.PatientRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-import java.util.Date;
-import java.util.List;
-
-@SpringBootApplication
-public class TestPatientOperations implements CommandLineRunner {
-
-    @Autowired
-    private PatientRepository patientRepository;
-
-    public static void main(String[] args) {
-        SpringApplication.run(TestPatientOperations.class, args);
-    }
-
-    @Override
-    public void run(String... args) {
-        // Ajouter des patients
-        patientRepository.save(new Patient(null, "Achraf", new Date(), true, 10));
-        patientRepository.save(new Patient(null, "Lina", new Date(), false, 20));
-
-        // Consulter tous les patients
-        List<Patient> patients = patientRepository.findAll();
-        System.out.println("Tous les patients :");
-        patients.forEach(p -> System.out.println(p.getNom()));
-
-        // Consulter un patient par ID
-        Patient patient = patientRepository.findById(1L).orElse(null);
-        if (patient != null) {
-            System.out.println("Patient trouvé : " + patient.getNom());
-        }
-
-        // Chercher des patients malades
-        List<Patient> malades = patientRepository.findByMalade(true);
-        System.out.println("Patients malades :");
-        malades.forEach(p -> System.out.println(p.getNom()));
-
-        // Mettre à jour un patient
-        if (patient != null) {
-            patient.setScore(100);
-            patientRepository.save(patient);
-            System.out.println("Patient mis à jour : " + patient.getNom());
-        }
-
-        // Supprimer un patient
-        if (!patients.isEmpty()) {
-            Long idToDelete = patients.get(0).getId();
-            patientRepository.deleteById(idToDelete);
-            System.out.println("Patient supprimé avec ID : " + idToDelete);
-        }
-    }
-}
-```
-
-### Ce que ce code fait :
-
-1. **Ajouter des patients** : Création de nouveaux patients.
-2. **Consulter tous les patients** : Affichage de tous les patients enregistrés.
-3. **Consulter un patient par ID** : Recherche d'un patient par son identifiant.
-4. **Chercher des patients malades** : Recherche des patients dont le statut est malade.
-5. **Mettre à jour un patient** : Modification du score d'un patient.
-6. **Supprimer un patient** : Suppression d'un patient.
-
-## 6. Migrer de H2 Database vers MySQL
-
-Comme mentionné précédemment, vous devez installer MySQL, créer une base de données (par exemple `hospital_db`), et ajuster les propriétés dans `application.properties` pour se connecter à MySQL. Vous aurez également besoin du driver MySQL :
-
-Ajoutez la dépendance dans le fichier `pom.xml` pour MySQL :
-
-```xml
-<dependency>
-    <groupId>mysql</groupId>
-    <artifactId>mysql-connector-java</artifactId>
-</dependency>
-```
-
-## 7. Reprendre les exemples du Patient, Médecin, Rendez-vous, Consultation, Utilisateurs et Rôles
-
-### Exemple d'entités supplémentaires :
-
-#### Médecin.java
-
-```java
-package ma.achraf.hospital_app.entities;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import javax.persistence.*;
-
-@Data
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class Medecin {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
     private String nom;
+    private String email;
     private String specialite;
+
+    @OneToMany(mappedBy = "medecin")
+    private List<RendezVous> rendezVous;
 }
 ```
 
-#### RendezVous.java
+### 3. `RendezVous`
 
 ```java
-package ma.achraf.hospital_app.entities;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import javax.persistence.*;
-import java.util.Date;
-
-@Data
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class RendezVous {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date date;
+    private STATUS status;
+
     @ManyToOne
     private Patient patient;
 
     @ManyToOne
     private Medecin medecin;
 
-    @Temporal(TemporalType.DATE)
-    private Date dateRendezVous;
+    @OneToOne(mappedBy = "rendezVous")
+    private Consultation consultation;
 }
 ```
 
-#### Consultation.java
+### 4. `Consultation`
 
 ```java
-package ma.achraf.hospital_app.entities;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import javax.persistence.*;
-import java.util.Date;
-
-@Data
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class Consultation {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    @ManyToOne
-    private RendezVous rendezVous;
-
-    @Temporal(TemporalType.DATE)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date dateConsultation;
+    private String rapport;
 
-    private String diagnostic;
+    @OneToOne
+    private RendezVous rendezVous;
 }
 ```
 
-#### Utilisateur.java
+### 5. `Utilisateur` & `Role`
 
 ```java
-package ma.achraf.hospital_app.entities;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import javax.persistence.*;
-
-@Data
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class Utilisateur {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
     private String username;
     private String password;
 
-    @ManyToMany
-    private Set<Role> roles;
+    @ManyToMany(fetch = FetchType.EAGER)
+    private List<Role> roles;
 }
 ```
 
-#### Role.java
-
 ```java
-package ma.achraf.hospital_app.entities;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import javax.persistence.*;
-
-@Data
 @Entity
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Role {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
     private String roleName;
 }
 ```
 
-Ensuite, créez des repositories pour ces entités et ajustez votre `CommandLineRunner` pour tester ces nouvelles entités.
+### 6. Enum `STATUS`
 
-## Conclusion
+```java
+public enum STATUS {
+    EN_ATTENTE,
+    CONFIRME,
+    ANNULE,
+    TERMINE
+}
+```
 
-Avec ces étapes, vous avez créé un projet Spring Boot pour gérer les patients, les médecins, les rendez-vous, les consultations, les utilisateurs et les rôles. Vous avez aussi migré de H2 vers MySQL.
+---
+
+## Configuration
+
+### Fichier `application.properties`
+
+```properties
+spring.application.name=hospital_app
+spring.datasource.url=jdbc:mysql://localhost:3306/hospital_db?useSSL=false&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MariaDBDialect
+server.port=8080
+```
+
+---
+
+## Implémentation avec `CommandLineRunner`
+
+### Classe principale `HospitalAppApplication`
+
+```java
+@SpringBootApplication
+public class HospitalAppApplication implements CommandLineRunner {
+
+    @Autowired private PatientRepository patientRepository;
+    @Autowired private MedecinRepository medecinRepository;
+    @Autowired private RendezVousRepository rendezVousRepository;
+    @Autowired private ConsultationRepository consultationRepository;
+
+    public static void main(String[] args) {
+        SpringApplication.run(HospitalAppApplication.class, args);
+    }
+
+    @Override
+    public void run(String... args) {
+        patientRepository.save(new Patient(null, "messi", new Date(), true, 10));
+        patientRepository.save(new Patient(null, "hafid", new Date(), false, 20));
+        patientRepository.save(new Patient(null, "Karim", new Date(), true, 5));
+
+        List<Patient> patients = patientRepository.findAll();
+        patients.forEach(p -> System.out.println(p.getNom()));
+
+        Patient patient = patients.get(0);
+        patient.setScore(99);
+        patientRepository.save(patient);
+
+        Long idToDelete = patients.get(1).getId();
+        patientRepository.deleteById(idToDelete);
+
+        Medecin medecin = Medecin.builder()
+                .nom("Dr. Salma")
+                .specialite("Cardiologie")
+                .build();
+        medecin = medecinRepository.save(medecin);
+
+        RendezVous rdv = RendezVous.builder()
+                .date(new Date())
+                .status(STATUS.EN_ATTENTE)
+                .patient(patient)
+                .medecin(medecin)
+                .build();
+        rdv = rendezVousRepository.save(rdv);
+
+        Consultation consultation = Consultation.builder()
+                .dateConsultation(new Date())
+                .rapport("Consultation initiale : état stable.")
+                .rendezVous(rdv)
+                .build();
+        consultationRepository.save(consultation);
+    }
+}
+```
+
+---
+
+### Classe `TestUtilisateurRole`
+
+```java
+@SpringBootApplication
+public class TestUtilisateurRole implements CommandLineRunner {
+
+    @Autowired private UtilisateurRepository utilisateurRepository;
+    @Autowired private RoleRepository roleRepository;
+
+    public static void main(String[] args) {
+        SpringApplication.run(TestUtilisateurRole.class, args);
+    }
+
+    @Override
+    public void run(String... args) {
+        Role role1 = Role.builder().roleName("ADMIN").build();
+        Role role2 = Role.builder().roleName("USER").build();
+
+        roleRepository.save(role1);
+        roleRepository.save(role2);
+
+        List<Role> roles = new ArrayList<>();
+        roles.add(role1);
+        roles.add(role2);
+
+        Utilisateur utilisateur = Utilisateur.builder()
+                .username("achraf")
+                .password("password123")
+                .roles(roles)
+                .build();
+
+        utilisateurRepository.save(utilisateur);
+        System.out.println("✅ Utilisateur avec rôles créé avec succès !");
+    }
+}
+```
+
+---
+
+##  Conclusion
+
+Ce TP nous a permis de mettre en pratique plusieurs aspects de Spring Boot et JPA :
+
+* Modélisation des entités avec des relations complexes (`@OneToMany`, `@ManyToOne`, `@OneToOne`, `@ManyToMany`).
+* Configuration d'une base de données MySQL avec Hibernate.
+* Utilisation de `CommandLineRunner` pour insérer et manipuler les données au démarrage.
+* Introduction à la gestion des utilisateurs et des rôles.
+
+Ce projet représente une base solide pour construire une application hospitalière complète, et peut facilement évoluer vers une architecture RESTful avec sécurité (Spring Security), pagination, filtres dynamiques, ou encore une interface frontend connectée via une API.
+

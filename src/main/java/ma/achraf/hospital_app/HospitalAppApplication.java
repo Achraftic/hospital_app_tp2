@@ -37,7 +37,7 @@ public class HospitalAppApplication implements CommandLineRunner {
         patientRepository.save(new Patient(null, "Karim", new Date(), true, 5));
 
         // 🔹 Consulter tous les patients
-        System.out.println("🔍 Liste de tous les patients :");
+        System.out.println("Liste de tous les patients :");
         List<Patient> patients = patientRepository.findAll();
         patients.forEach(p -> {
             System.out.println(p.getId() + " | " + p.getNom() + " | " + p.getScore() + " | malade: " + p.isMalade());
